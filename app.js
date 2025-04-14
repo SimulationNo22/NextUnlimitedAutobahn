@@ -68,9 +68,10 @@ function handleOrientation(event) {
 
     if (userLat && signLat) {
       const bearing = calcBearing(userLat, userLon, signLat, signLon);
-      let rawTargetRotation = normalizeAngle(bearing - userHeading); // kein künstlicher Offset
 
-      // weiche Drehung über kürzeste Richtung
+      // Richtungskorrektur (Nadel nach Ziel zeigt + Kompass dreht mit Gerät)
+      let rawTargetRotation = normalizeAngle(userHeading - bearing + 180);
+
       let diff = ((rawTargetRotation - currentNeedleRotation + 540) % 360) - 180;
       currentNeedleRotation = normalizeAngle(currentNeedleRotation + diff * 0.1);
 
@@ -173,7 +174,7 @@ function calcBearing(lat1, lon1, lat2, lon2) {
 
 function rotateNeedle(angle) {
   const needleContainer = document.getElementById('needleContainer');
-  needleContainer.style.transform = `rotate(${angle}deg) rotate(180deg)`; // 180° umdrehen für visuelle Richtung
+  needleContainer.style.transform = `rotate(${angle}deg) rotate(180deg)`; // visuell drehen
   updateDebugOverlay();
 }
 
