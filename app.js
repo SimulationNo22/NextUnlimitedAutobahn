@@ -61,26 +61,31 @@ function updatePosition(position) {
     useDirection = true;
   }
 }
+let headingBuffer = [];
 
 function handleOrientation(event) {
   if (typeof event.alpha === 'number') {
-    userHeading = event.alpha;
+    headingBuffer.push(event.alpha);
+    if (headingBuffer.length > 5) headingBuffer.shift(); // nur die letzten 5 Werte behalten
+
+    const avgHeading = headingBuffer.reduce((a, b) => a + b, 0) / headingBuffer.length;
+    userHeading = avgHeading;
 
     if (userLat && signLat) {
       const bearing = calcBearing(userLat, userLon, signLat, signLon);
-let targetRotation = normalizeAngle(bearing + userHeading);
-targetRotation = Math.round(targetRotation * 10) / 10;
-let current = Math.round(currentNeedleRotation * 10) / 10;
+      let targetRotation = normalizeAngle(bearing + userHeading);
+      targetRotation = Math.round(targetRotation * 10) / 10;
+      let current = Math.round(currentNeedleRotation * 10) / 10;
 
-let diff = ((targetRotation - current + 540) % 360) - 180;
-diff = Math.max(Math.min(diff, 6), -6);
-currentNeedleRotation = normalizeAngle(current + diff * 0.3);
+      let diff = ((targetRotation - current + 540) % 360) - 180;
+      diff = Math.max(Math.min(diff, 6), -6);
+      currentNeedleRotation = normalizeAngle(current + diff * 0.3);
 
-rotateNeedle(currentNeedleRotation);
-
+      rotateNeedle(currentNeedleRotation);
     }
   }
 }
+
 
 function normalizeAngle(angle) {
   return ((angle % 360) + 360) % 360;
