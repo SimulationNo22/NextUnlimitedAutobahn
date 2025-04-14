@@ -190,7 +190,7 @@ function animateCompass() {
     { transform: 'rotate(180deg)' },
     { transform: 'rotate(0deg)' }
   ], {
-    duration: 2000,
+    duration: 4000,
     easing: 'ease-in-out'
   });
 }
