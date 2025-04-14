@@ -68,16 +68,11 @@ function handleOrientation(event) {
 
     if (userLat && signLat) {
       const bearing = calcBearing(userLat, userLon, signLat, signLon);
-
-      // ✅ Richtungsfix: 360 - alpha oder Addition der Winkel
       let targetRotation = normalizeAngle(bearing + userHeading);
 
-      let diff = targetRotation - currentNeedleRotation;
-      if (diff > 180) diff -= 360;
-      if (diff < -180) diff += 360;
-
-      currentNeedleRotation += diff * 0.15;
-      currentNeedleRotation = normalizeAngle(currentNeedleRotation);
+      // Kontinuierliche Richtung, keine Sprünge
+      let diff = ((targetRotation - currentNeedleRotation + 540) % 360) - 180;
+      currentNeedleRotation = normalizeAngle(currentNeedleRotation + diff * 0.15);
 
       rotateNeedle(currentNeedleRotation);
     }
@@ -198,7 +193,6 @@ function animateCompass() {
   });
 }
 
-// DEBUG OVERLAY
 function setupDebugBox() {
   const debugBox = document.createElement('div');
   debugBox.id = 'debugBox';
