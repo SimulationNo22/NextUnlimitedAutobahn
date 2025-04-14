@@ -1,17 +1,18 @@
 let userLat, userLon, userHeading;
 let signLat, signLon;
 let useDirection = false;
+let currentNeedleRotation = 0;
 
+// Permissions und Start
 function requestPermissions() {
   if (typeof DeviceOrientationEvent !== "undefined" &&
       typeof DeviceOrientationEvent.requestPermission === "function") {
     DeviceOrientationEvent.requestPermission()
       .then(response => {
         if (response === "granted") {
-          console.log("✅ Kompass-Zugriff erlaubt");
           startApp();
         } else {
-          alert("Kompasszugriff abgelehnt – bitte in den Geräteeinstellungen erlauben.");
+          alert("Kompasszugriff abgelehnt.");
         }
       })
       .catch(console.error);
@@ -25,6 +26,7 @@ function startApp() {
   document.getElementById('main').style.display = 'block';
   initLocation();
   animateCompass();
+  setupDebugBox();
 }
 
 function initLocation() {
@@ -62,17 +64,25 @@ function updatePosition(position) {
 }
 
 function handleOrientation(event) {
-  console.log("Kompassdaten:", event.alpha);
-
   if (typeof event.alpha === 'number') {
     userHeading = event.alpha;
 
     if(userLat && signLat) {
       const bearing = calcBearing(userLat, userLon, signLat, signLon);
-      const rotation = bearing - userHeading;
-      rotateNeedle(rotation);
+      let targetRotation = bearing - userHeading;
+
+      // Glättung
+      targetRotation = normalizeAngle(targetRotation);
+      const diff = normalizeAngle(targetRotation - currentNeedleRotation);
+      currentNeedleRotation += diff * 0.1;
+
+      rotateNeedle(currentNeedleRotation);
     }
   }
+}
+
+function normalizeAngle(angle) {
+  return ((angle % 360) + 360) % 360;
 }
 
 function fetchNearestSign(lat, lon) {
@@ -81,15 +91,12 @@ function fetchNearestSign(lat, lon) {
     way["highway"="motorway"]["maxspeed"="none"](around:50000,${lat},${lon});
     out center;
   `;
-
   fetch('https://overpass-api.de/api/interpreter', {
     method: 'POST',
     body: query
   })
   .then(res => res.json())
   .then(data => {
-    console.log("OSM Daten (nächstes Schild):", data);
-
     if (data.elements.length > 0) {
       const nearest = data.elements.reduce((a, b) => {
         const da = calcDistance(lat, lon, a.center.lat, a.center.lon);
@@ -100,8 +107,6 @@ function fetchNearestSign(lat, lon) {
       signLon = nearest.center.lon;
       const dist = calcDistance(lat, lon, signLat, signLon);
       document.getElementById('distance').innerHTML = `${dist.toFixed(1)} km`;
-    } else {
-      console.warn("⚠️ Kein unbegrenztes Autobahnschild gefunden.");
     }
   });
 }
@@ -114,16 +119,12 @@ function fetchSign(lat, lon, heading) {
     out center;
   `;
 
-  console.log("📡 fetchSign gestartet:", query);
-
   fetch('https://overpass-api.de/api/interpreter', {
     method: 'POST',
     body: query
   })
   .then(res => res.json())
   .then(data => {
-    console.log("OSM Daten (Richtung):", data);
-
     if(data.elements.length > 0){
       const nextSign = findNextSignInDirection(data.elements, lat, lon, heading);
       if (nextSign) {
@@ -132,11 +133,8 @@ function fetchSign(lat, lon, heading) {
         const dist = calcDistance(lat, lon, signLat, signLon);
         document.getElementById('distance').innerHTML = `${dist.toFixed(1)} km`;
       }
-    } else {
-      console.warn("⚠️ Kein Schild in Fahrtrichtung gefunden.");
     }
-  })
-  .catch(err => console.error("❌ Overpass-API Fehler:", err));
+  });
 }
 
 function findNextSignInDirection(signs, userLat, userLon, heading) {
@@ -174,9 +172,39 @@ function calcBearing(lat1, lon1, lat2, lon2) {
 }
 
 function rotateNeedle(angle) {
-  updateDebugOverlay();
   const needleContainer = document.getElementById('needleContainer');
   needleContainer.style.transform = `rotate(${angle}deg)`;
+  updateDebugOverlay();
+}
+
+// DEBUG OVERLAY
+function setupDebugBox() {
+  const debugBox = document.createElement('div');
+  debugBox.id = 'debugBox';
+  debugBox.style.position = 'fixed';
+  debugBox.style.bottom = '10px';
+  debugBox.style.left = '10px';
+  debugBox.style.background = 'rgba(0,0,0,0.7)';
+  debugBox.style.color = '#0f0';
+  debugBox.style.padding = '10px';
+  debugBox.style.fontSize = '12px';
+  debugBox.style.fontFamily = 'monospace';
+  debugBox.style.zIndex = '10000';
+  debugBox.innerHTML = 'Debug aktiv...';
+  document.body.appendChild(debugBox);
+}
+
+function updateDebugOverlay() {
+  const debugBox = document.getElementById('debugBox');
+  if (!debugBox) return;
+
+  debugBox.innerHTML = `
+    <b>DEBUG</b><br>
+    Lat: ${userLat?.toFixed(5) || '--'}<br>
+    Lon: ${userLon?.toFixed(5) || '--'}<br>
+    Heading: ${userHeading !== undefined ? userHeading.toFixed(2) : '--'}°<br>
+    Ziel: ${signLat?.toFixed(5) || '--'} / ${signLon?.toFixed(5) || '--'}
+  `;
 }
 
 function showError(error) {
@@ -193,31 +221,4 @@ function animateCompass() {
     duration: 2000,
     easing: 'ease-in-out'
   });
-}
-
-
-// DEBUG-Overlay HTML hinzufügen
-const debugBox = document.createElement('div');
-debugBox.id = 'debugBox';
-debugBox.style.position = 'fixed';
-debugBox.style.bottom = '10px';
-debugBox.style.left = '10px';
-debugBox.style.background = 'rgba(0,0,0,0.7)';
-debugBox.style.color = '#0f0';
-debugBox.style.padding = '10px';
-debugBox.style.fontSize = '12px';
-debugBox.style.fontFamily = 'monospace';
-debugBox.style.zIndex = '10000';
-debugBox.innerHTML = 'Debug aktiv...';
-document.body.appendChild(debugBox);
-
-// Aktualisierungsfunktion
-function updateDebugOverlay() {
-  debugBox.innerHTML = `
-    <b>DEBUG</b><br>
-    Lat: ${userLat?.toFixed(5) || '--'}<br>
-    Lon: ${userLon?.toFixed(5) || '--'}<br>
-    Heading: ${userHeading !== undefined ? userHeading.toFixed(2) : '--'}°<br>
-    Ziel: ${signLat?.toFixed(5) || '--'} / ${signLon?.toFixed(5) || '--'}
-  `;
 }
