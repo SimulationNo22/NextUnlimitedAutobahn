@@ -68,10 +68,11 @@ function handleOrientation(event) {
 
     if (userLat && signLat) {
       const bearing = calcBearing(userLat, userLon, signLat, signLon);
-      let rawTargetRotation = normalizeAngle(bearing - userHeading);
+      let targetRotation = normalizeAngle(bearing - userHeading);
 
-      let diff = ((rawTargetRotation - currentNeedleRotation + 540) % 360) - 180;
-      currentNeedleRotation = normalizeAngle(currentNeedleRotation + diff * 0.1);
+      let diff = ((targetRotation - currentNeedleRotation + 540) % 360) - 180;
+      diff = Math.max(Math.min(diff, 6), -6); // max ±6° Änderung pro Schritt
+      currentNeedleRotation = normalizeAngle(currentNeedleRotation + diff * 0.3);
 
       rotateNeedle(currentNeedleRotation);
     }
