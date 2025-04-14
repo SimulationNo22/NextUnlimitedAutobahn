@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Next Unlimited Sign</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="disclaimer">
+  <h1>Disclaimer</h1>
+  <p>
+    Always adhere to local traffic regulations. This app is for informational purposes only and does not replace your responsibility as a driver.
+  </p>
+  <button onclick="acceptDisclaimer()">OK let's Go</button>
+</div>
+
+<div id="main" style="display:none;">
+  <div class="container">
+    <div class="speed" id="speed" style="
+    padding-bottom: 30px;
+">-- km/h</div>
+    <div class="compass">
+      <img src="assets/unbegrenzt.png" id="sign">
+      <div id="needleContainer">
+        <div id="needle"></div>
+      </div>
+    </div>
+    <div class="distance" id="distance">-- km</div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
