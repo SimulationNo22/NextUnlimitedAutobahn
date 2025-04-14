@@ -58,30 +58,16 @@ function handleOrientation(event) {
 
 // Hole das nächste Schild in Fahrtrichtung (unbegrenzte deutsche Autobahn)
 function fetchSign(lat, lon, heading) {
-  const radius = 50000; // 50 km Radius
-  const overpassQuery = `
-    [out:json][timeout:25];
-    way["highway"="motorway"]["maxspeed"="none"](around:${radius},${lat},${lon});
-    out center;`;
+  // DEBUG: Feste Koordinaten eines realen Schilds (z. B. A9 bei München)
+  signLat = 48.1530;   // Beispielkoordinaten
+  signLon = 11.5600;
 
-  fetch('https://overpass-api.de/api/interpreter', {
-    method: 'POST',
-    body: overpassQuery
-  })
-  .then(res => res.json())
-  .then(data => {
-    if(data.elements.length > 0){
-      const nextSign = findNextSignInDirection(data.elements, lat, lon, heading);
-      if (nextSign) {
-        signLat = nextSign.center.lat;
-        signLon = nextSign.center.lon;
-        const dist = calcDistance(lat, lon, signLat, signLon);
-        document.getElementById('distance').innerHTML = `${dist.toFixed(1)} km`;
-      }
-    }
-  })
-  .catch(err => console.error(err));
+  const dist = calcDistance(lat, lon, signLat, signLon);
+  document.getElementById('distance').innerHTML = `${dist.toFixed(1)} km`;
+
+  console.log("DEBUG-Modus aktiv – Distanz zu festem Schild:", dist.toFixed(1));
 }
+
 
 // Bestimmt das nächste Schild in Fahrtrichtung
 function findNextSignInDirection(signs, userLat, userLon, heading) {
