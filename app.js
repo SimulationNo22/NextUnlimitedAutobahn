@@ -1,5 +1,8 @@
+let userLat, userLon, userHeading;
+let signLat, signLon;
+let useDirection = false;
+
 function requestPermissions() {
-  // Für iOS – Kompassberechtigung anfragen
   if (typeof DeviceOrientationEvent !== "undefined" &&
       typeof DeviceOrientationEvent.requestPermission === "function") {
     DeviceOrientationEvent.requestPermission()
@@ -13,24 +16,11 @@ function requestPermissions() {
       })
       .catch(console.error);
   } else {
-    // Android oder andere Browser – kein spezieller Request nötig
     startApp();
   }
 }
 
 function startApp() {
-  document.getElementById('disclaimer').style.display = 'none';
-  document.getElementById('main').style.display = 'block';
-  initLocation();
-  animateCompass();
-}
-
-
-let userLat, userLon, userHeading;
-let signLat, signLon;
-let useDirection = false;
-
-function acceptDisclaimer() {
   document.getElementById('disclaimer').style.display = 'none';
   document.getElementById('main').style.display = 'block';
   initLocation();
@@ -44,9 +34,8 @@ function initLocation() {
       showError,
       { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
     );
-    window.addEventListener("deviceorientationabsolute", handleOrientation, true);
+    window.addEventListener("deviceorientation", handleOrientation, true);
 
-    // Wiederholte Abfrage alle 5 Sekunden
     setInterval(() => {
       if (userLat && userLon) {
         if (useDirection && userHeading !== undefined) {
@@ -73,12 +62,16 @@ function updatePosition(position) {
 }
 
 function handleOrientation(event) {
-  userHeading = event.alpha;
+  console.log("Kompassdaten:", event.alpha);
 
-  if(userLat && signLat) {
-    const bearing = calcBearing(userLat, userLon, signLat, signLon);
-    const rotation = bearing - userHeading;
-    rotateNeedle(rotation);
+  if (typeof event.alpha === 'number') {
+    userHeading = event.alpha;
+
+    if(userLat && signLat) {
+      const bearing = calcBearing(userLat, userLon, signLat, signLon);
+      const rotation = bearing - userHeading;
+      rotateNeedle(rotation);
+    }
   }
 }
 
@@ -95,6 +88,8 @@ function fetchNearestSign(lat, lon) {
   })
   .then(res => res.json())
   .then(data => {
+    console.log("OSM Daten (nächstes Schild):", data);
+
     if (data.elements.length > 0) {
       const nearest = data.elements.reduce((a, b) => {
         const da = calcDistance(lat, lon, a.center.lat, a.center.lon);
@@ -105,7 +100,8 @@ function fetchNearestSign(lat, lon) {
       signLon = nearest.center.lon;
       const dist = calcDistance(lat, lon, signLat, signLon);
       document.getElementById('distance').innerHTML = `${dist.toFixed(1)} km`;
-      console.log("Start: Nächstgelegenes Schild gesetzt");
+    } else {
+      console.warn("⚠️ Kein unbegrenztes Autobahnschild gefunden.");
     }
   });
 }
@@ -118,12 +114,16 @@ function fetchSign(lat, lon, heading) {
     out center;
   `;
 
+  console.log("📡 fetchSign gestartet:", query);
+
   fetch('https://overpass-api.de/api/interpreter', {
     method: 'POST',
     body: query
   })
   .then(res => res.json())
   .then(data => {
+    console.log("OSM Daten (Richtung):", data);
+
     if(data.elements.length > 0){
       const nextSign = findNextSignInDirection(data.elements, lat, lon, heading);
       if (nextSign) {
@@ -131,11 +131,12 @@ function fetchSign(lat, lon, heading) {
         signLon = nextSign.center.lon;
         const dist = calcDistance(lat, lon, signLat, signLon);
         document.getElementById('distance').innerHTML = `${dist.toFixed(1)} km`;
-        console.log("Fahrtrichtung: Schild aktualisiert");
       }
+    } else {
+      console.warn("⚠️ Kein Schild in Fahrtrichtung gefunden.");
     }
   })
-  .catch(err => console.error(err));
+  .catch(err => console.error("❌ Overpass-API Fehler:", err));
 }
 
 function findNextSignInDirection(signs, userLat, userLon, heading) {
@@ -167,12 +168,13 @@ function calcBearing(lat1, lon1, lat2, lon2) {
   lat1 *= Math.PI / 180; lat2 *= Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
   const y = Math.sin(dLon) * Math.cos(lat2);
-  const x = Math.cos(lat1)*sin(lat2) - Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);
+  const x = Math.cos(lat1)*Math.sin(lat2) - Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);
   const brng = Math.atan2(y, x) * (180 / Math.PI);
   return (brng + 360) % 360;
 }
 
 function rotateNeedle(angle) {
+  updateDebugOverlay();
   const needleContainer = document.getElementById('needleContainer');
   needleContainer.style.transform = `rotate(${angle}deg)`;
 }
@@ -191,4 +193,31 @@ function animateCompass() {
     duration: 2000,
     easing: 'ease-in-out'
   });
+}
+
+
+// DEBUG-Overlay HTML hinzufügen
+const debugBox = document.createElement('div');
+debugBox.id = 'debugBox';
+debugBox.style.position = 'fixed';
+debugBox.style.bottom = '10px';
+debugBox.style.left = '10px';
+debugBox.style.background = 'rgba(0,0,0,0.7)';
+debugBox.style.color = '#0f0';
+debugBox.style.padding = '10px';
+debugBox.style.fontSize = '12px';
+debugBox.style.fontFamily = 'monospace';
+debugBox.style.zIndex = '10000';
+debugBox.innerHTML = 'Debug aktiv...';
+document.body.appendChild(debugBox);
+
+// Aktualisierungsfunktion
+function updateDebugOverlay() {
+  debugBox.innerHTML = `
+    <b>DEBUG</b><br>
+    Lat: ${userLat?.toFixed(5) || '--'}<br>
+    Lon: ${userLon?.toFixed(5) || '--'}<br>
+    Heading: ${userHeading !== undefined ? userHeading.toFixed(2) : '--'}°<br>
+    Ziel: ${signLat?.toFixed(5) || '--'} / ${signLon?.toFixed(5) || '--'}
+  `;
 }
