@@ -62,7 +62,7 @@ button {
 
 #needle {
   position: absolute;
-  top: -60px;
+  top: -15px;
   left: 50%;
   transform: translateX(-50%);
   width: 0;
