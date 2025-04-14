@@ -3,7 +3,6 @@ let signLat, signLon;
 let useDirection = false;
 let currentNeedleRotation = 0;
 
-// Starte App mit Berechtigungsabfrage
 function requestPermissions() {
   if (typeof DeviceOrientationEvent !== "undefined" &&
       typeof DeviceOrientationEvent.requestPermission === "function") {
@@ -69,13 +68,15 @@ function handleOrientation(event) {
 
     if (userLat && signLat) {
       const bearing = calcBearing(userLat, userLon, signLat, signLon);
-      let targetRotation = normalizeAngle(bearing - userHeading);
+
+      // ✅ Richtungsfix: 360 - alpha oder Addition der Winkel
+      let targetRotation = normalizeAngle(bearing + userHeading);
 
       let diff = targetRotation - currentNeedleRotation;
       if (diff > 180) diff -= 360;
       if (diff < -180) diff += 360;
 
-      currentNeedleRotation += diff * 0.15; // weich
+      currentNeedleRotation += diff * 0.15;
       currentNeedleRotation = normalizeAngle(currentNeedleRotation);
 
       rotateNeedle(currentNeedleRotation);
