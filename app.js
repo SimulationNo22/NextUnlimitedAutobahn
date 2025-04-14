@@ -56,7 +56,7 @@ function updatePosition(position) {
   const speedKmH = position.coords.speed ? position.coords.speed * 3.6 : 0;
   document.getElementById('speed').innerHTML = `${speedKmH.toFixed(0)} km/h`;
 
-  if (speedKmH > 3) {
+  if (speedKmH > 50) {
     useDirection = true;
   }
 }
