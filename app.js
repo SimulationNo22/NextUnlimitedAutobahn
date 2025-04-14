@@ -68,11 +68,9 @@ function handleOrientation(event) {
 
     if (userLat && signLat) {
       const bearing = calcBearing(userLat, userLon, signLat, signLon);
+      let rawTargetRotation = normalizeAngle(bearing - userHeading); // kein künstlicher Offset
 
-      // 180° Versatz, damit Sprungstelle nach unten
-      let rawTargetRotation = normalizeAngle(bearing + userHeading + 180);
-
-      // Sanfte Rotation ohne Sprung
+      // weiche Drehung über kürzeste Richtung
       let diff = ((rawTargetRotation - currentNeedleRotation + 540) % 360) - 180;
       currentNeedleRotation = normalizeAngle(currentNeedleRotation + diff * 0.1);
 
@@ -175,7 +173,7 @@ function calcBearing(lat1, lon1, lat2, lon2) {
 
 function rotateNeedle(angle) {
   const needleContainer = document.getElementById('needleContainer');
-  needleContainer.style.transform = `rotate(${angle}deg)`;
+  needleContainer.style.transform = `rotate(${angle}deg) rotate(180deg)`; // 180° umdrehen für visuelle Richtung
   updateDebugOverlay();
 }
 
@@ -190,7 +188,7 @@ function animateCompass() {
     { transform: 'rotate(180deg)' },
     { transform: 'rotate(0deg)' }
   ], {
-    duration: 4000,
+    duration: 2000,
     easing: 'ease-in-out'
   });
 }
