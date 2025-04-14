@@ -1,3 +1,31 @@
+function requestPermissions() {
+  // Für iOS – Kompassberechtigung anfragen
+  if (typeof DeviceOrientationEvent !== "undefined" &&
+      typeof DeviceOrientationEvent.requestPermission === "function") {
+    DeviceOrientationEvent.requestPermission()
+      .then(response => {
+        if (response === "granted") {
+          console.log("✅ Kompass-Zugriff erlaubt");
+          startApp();
+        } else {
+          alert("Kompasszugriff abgelehnt – bitte in den Geräteeinstellungen erlauben.");
+        }
+      })
+      .catch(console.error);
+  } else {
+    // Android oder andere Browser – kein spezieller Request nötig
+    startApp();
+  }
+}
+
+function startApp() {
+  document.getElementById('disclaimer').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+  initLocation();
+  animateCompass();
+}
+
+
 let userLat, userLon, userHeading;
 let signLat, signLon;
 let useDirection = false;
