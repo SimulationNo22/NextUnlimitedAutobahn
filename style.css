@@ -57,20 +57,19 @@ button {
   left: 0;
   width: 100%;
   height: 100%;
-  transform: rotate(0deg); /* wird von JS überschrieben */
-  transition: transform 0.3s linear; /* weiche Bewegung */
+  transition: transform 0.3s linear;
 }
 
 #needle {
   position: absolute;
-  top: 0;
+  top: -60px;
   left: 50%;
   transform: translateX(-50%);
   width: 0;
   height: 0;
   border-left: 12px solid transparent;
   border-right: 12px solid transparent;
-  border-bottom: 20px solid white; /* Spitze zeigt nach oben */
+  border-bottom: 20px solid white;
 }
 
 @keyframes pop {
