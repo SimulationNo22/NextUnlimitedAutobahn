@@ -68,11 +68,13 @@ function handleOrientation(event) {
 
     if (userLat && signLat) {
       const bearing = calcBearing(userLat, userLon, signLat, signLon);
-      let targetRotation = normalizeAngle(bearing + userHeading);
 
-      // Kontinuierliche Richtung, keine Sprünge
-      let diff = ((targetRotation - currentNeedleRotation + 540) % 360) - 180;
-      currentNeedleRotation = normalizeAngle(currentNeedleRotation + diff * 0.15);
+      // 180° Versatz, damit Sprungstelle nach unten
+      let rawTargetRotation = normalizeAngle(bearing + userHeading + 180);
+
+      // Sanfte Rotation ohne Sprung
+      let diff = ((rawTargetRotation - currentNeedleRotation + 540) % 360) - 180;
+      currentNeedleRotation = normalizeAngle(currentNeedleRotation + diff * 0.1);
 
       rotateNeedle(currentNeedleRotation);
     }
