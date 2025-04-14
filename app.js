@@ -3,7 +3,7 @@ let signLat, signLon;
 let useDirection = false;
 let currentNeedleRotation = 0;
 
-// Permissions und Start
+// Starte App mit Berechtigungsabfrage
 function requestPermissions() {
   if (typeof DeviceOrientationEvent !== "undefined" &&
       typeof DeviceOrientationEvent.requestPermission === "function") {
@@ -67,14 +67,16 @@ function handleOrientation(event) {
   if (typeof event.alpha === 'number') {
     userHeading = event.alpha;
 
-    if(userLat && signLat) {
+    if (userLat && signLat) {
       const bearing = calcBearing(userLat, userLon, signLat, signLon);
-      let targetRotation = bearing - userHeading;
+      let targetRotation = normalizeAngle(bearing - userHeading);
 
-      // Glättung
-      targetRotation = normalizeAngle(targetRotation);
-      const diff = normalizeAngle(targetRotation - currentNeedleRotation);
-      currentNeedleRotation += diff * 0.1;
+      let diff = targetRotation - currentNeedleRotation;
+      if (diff > 180) diff -= 360;
+      if (diff < -180) diff += 360;
+
+      currentNeedleRotation += diff * 0.15; // weich
+      currentNeedleRotation = normalizeAngle(currentNeedleRotation);
 
       rotateNeedle(currentNeedleRotation);
     }
@@ -143,7 +145,9 @@ function findNextSignInDirection(signs, userLat, userLon, heading) {
 
   signs.forEach(sign => {
     const signBearing = calcBearing(userLat, userLon, sign.center.lat, sign.center.lon);
-    const angleDiff = Math.abs(heading - signBearing);
+    let angleDiff = Math.abs(normalizeAngle(heading - signBearing));
+    if (angleDiff > 180) angleDiff = 360 - angleDiff;
+
     if (angleDiff < smallestAngleDiff && angleDiff < 90) {
       smallestAngleDiff = angleDiff;
       nearestSign = sign;
@@ -177,6 +181,22 @@ function rotateNeedle(angle) {
   updateDebugOverlay();
 }
 
+function showError(error) {
+  console.warn('ERROR(' + error.code + '): ' + error.message);
+}
+
+function animateCompass() {
+  const needle = document.getElementById('needleContainer');
+  needle.animate([
+    { transform: 'rotate(-180deg)' },
+    { transform: 'rotate(180deg)' },
+    { transform: 'rotate(0deg)' }
+  ], {
+    duration: 2000,
+    easing: 'ease-in-out'
+  });
+}
+
 // DEBUG OVERLAY
 function setupDebugBox() {
   const debugBox = document.createElement('div');
@@ -203,22 +223,7 @@ function updateDebugOverlay() {
     Lat: ${userLat?.toFixed(5) || '--'}<br>
     Lon: ${userLon?.toFixed(5) || '--'}<br>
     Heading: ${userHeading !== undefined ? userHeading.toFixed(2) : '--'}°<br>
-    Ziel: ${signLat?.toFixed(5) || '--'} / ${signLon?.toFixed(5) || '--'}
+    Ziel: ${signLat?.toFixed(5) || '--'} / ${signLon?.toFixed(5) || '--'}<br>
+    Richtung: ${(calcBearing(userLat, userLon, signLat, signLon) || '--').toFixed(2)}°
   `;
-}
-
-function showError(error) {
-  console.warn('ERROR(' + error.code + '): ' + error.message);
-}
-
-function animateCompass() {
-  const needle = document.getElementById('needleContainer');
-  needle.animate([
-    { transform: 'rotate(-180deg)' },
-    { transform: 'rotate(180deg)' },
-    { transform: 'rotate(0deg)' }
-  ], {
-    duration: 2000,
-    easing: 'ease-in-out'
-  });
 }
