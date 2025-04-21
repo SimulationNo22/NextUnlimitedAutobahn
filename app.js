@@ -73,7 +73,7 @@ function handleOrientation(event) {
       diff = Math.max(Math.min(diff, 6), -6);
       currentNeedleRotation = normalizeAngle(currentNeedleRotation + diff * 0.3);
 
-      rotateNeedle(currentNeedleRotation);
+      rotateNeedle(90);//currentNeedleRotation);
     }
   }
 }
