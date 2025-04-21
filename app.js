@@ -63,7 +63,7 @@ function updatePosition(position) {
 }
 function handleOrientation(event) {
   if (typeof event.alpha === 'number') {
-    userHeading = event.alpha + 90;
+    userHeading = event.alpha ;
 
     if (userLat && signLat) {
       const bearing = calcBearing(userLat, userLon, signLat, signLon);
