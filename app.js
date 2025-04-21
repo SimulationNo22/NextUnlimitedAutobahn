@@ -63,7 +63,7 @@ function updatePosition(position) {
 }
 function handleOrientation(event) {
   if (typeof event.alpha === 'number') {
-    userHeading = event.alpha;
+    userHeading = event.alpha + 90;
 
     if (userLat && signLat) {
       const bearing = calcBearing(userLat, userLon, signLat, signLon);
@@ -73,7 +73,7 @@ function handleOrientation(event) {
       diff = Math.max(Math.min(diff, 6), -6);
       currentNeedleRotation = normalizeAngle(currentNeedleRotation + diff * 0.3);
 
-      rotateNeedle(90);//currentNeedleRotation);
+      rotateNeedle(currentNeedleRotation);
     }
   }
 }
