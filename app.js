@@ -84,7 +84,7 @@ function shortestAngleDiff(a, b) {
 
 
 function normalizeAngle(angle) {
-  return ((angle % 360) + 360) % 360;
+  return (((angle -180) % 360) + 360) % 360 +180;
 }
 
 function fetchNearestSign(lat, lon) {
